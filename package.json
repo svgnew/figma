@@ -1,0 +1,12 @@
+{
+  "name": "figma-svg-new",
+  "version": "1.0.0",
+  "description": "Figma plugin for svg.new — AI-powered image to SVG vectorization",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && cp build/code.js code.js"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.100.0",
+    "typescript": "^5.8.0"
+  }
+}

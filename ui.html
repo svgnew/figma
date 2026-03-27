@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px; color: var(--figma-color-text, #333); background: var(--figma-color-bg, #fff); }
+    h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .subtitle { font-size: 12px; color: var(--figma-color-text-secondary, #999); margin-bottom: 20px; }
+    .section { margin-bottom: 20px; }
+    .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--figma-color-text-secondary, #999); margin-bottom: 8px; }
+    input[type="text"], input[type="password"] { width: 100%; padding: 8px 10px; border: 1px solid var(--figma-color-border, #e5e5e5); border-radius: 6px; font-size: 13px; background: var(--figma-color-bg-secondary, #f5f5f5); color: var(--figma-color-text, #333); outline: none; }
+    input:focus { border-color: #2E95FF; }
+    .btn { width: 100%; padding: 10px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .btn-primary { background: #2E95FF; color: white; }
+    .btn-primary:hover { background: #1a7cdd; }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-secondary { background: var(--figma-color-bg-secondary, #f0f0f0); color: var(--figma-color-text, #333); margin-top: 8px; }
+    .btn-secondary:hover { background: #e0e0e0; }
+    .status { font-size: 12px; color: var(--figma-color-text-secondary, #999); margin-top: 12px; text-align: center; min-height: 18px; }
+    .status.error { color: #e53e3e; }
+    .status.success { color: #38a169; }
+    .divider { border: none; border-top: 1px solid var(--figma-color-border, #eee); margin: 16px 0; }
+    .drop-zone { border: 2px dashed var(--figma-color-border, #ddd); border-radius: 8px; padding: 24px; text-align: center; font-size: 12px; color: var(--figma-color-text-secondary, #999); cursor: pointer; transition: all 0.15s; }
+    .drop-zone:hover, .drop-zone.dragover { border-color: #2E95FF; background: rgba(46,149,255,0.05); }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .footer { position: fixed; bottom: 12px; left: 20px; right: 20px; text-align: center; font-size: 11px; color: var(--figma-color-text-tertiary, #bbb); }
+    .footer a { color: #2E95FF; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <h2>svg.new</h2>
+  <p class="subtitle">AI-powered image to SVG</p>
+
+  <div class="section">
+    <div class="section-title">API Key</div>
+    <input type="password" id="apiKey" placeholder="svk_..." />
+  </div>
+
+  <div class="section">
+    <div class="section-title">From Canvas</div>
+    <button class="btn btn-primary" id="vectorizeBtn" onclick="vectorizeSelection()">
+      Convert Selected Layer
+    </button>
+  </div>
+
+  <hr class="divider" />
+
+  <div class="section">
+    <div class="section-title">Or Upload Image</div>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      Drop an image or click to browse
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" />
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="footer">
+    Get your API key at <a href="https://svg.new/account" target="_blank">svg.new/account</a>
+  </div>
+
+  <script>
+    let processing = false;
+
+    function setStatus(msg, type = '') {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = 'status' + (type ? ' ' + type : '');
+    }
+
+    function setProcessing(on) {
+      processing = on;
+      const btn = document.getElementById('vectorizeBtn');
+      btn.disabled = on;
+      btn.innerHTML = on ? '<span class="spinner"></span>Converting...' : 'Convert Selected Layer';
+    }
+
+    function getApiKey() {
+      const key = document.getElementById('apiKey').value.trim();
+      if (!key) { setStatus('Enter your API key first', 'error'); return null; }
+      return key;
+    }
+
+    function vectorizeSelection() {
+      if (processing) return;
+      if (!getApiKey()) return;
+      setProcessing(true);
+      setStatus('Exporting layer...');
+      parent.postMessage({ pluginMessage: { type: 'vectorize-selection' } }, '*');
+    }
+
+    async function sendToApi(base64) {
+      const apiKey = getApiKey();
+      if (!apiKey) { setProcessing(false); return; }
+
+      setStatus('Vectorizing...');
+      try {
+        const res = await fetch('https://svg.new/api/agent/vectorize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + apiKey },
+          body: JSON.stringify({ image: base64 }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'API error ' + res.status);
+        }
+        const data = await res.json();
+        setStatus('Inserting SVG...');
+        parent.postMessage({ pluginMessage: { type: 'insert-svg', svg: data.svg } }, '*');
+      } catch (e) {
+        setStatus(e.message, 'error');
+        setProcessing(false);
+      }
+    }
+
+    onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+
+      if (msg.type === 'image-data') {
+        const bytes = new Uint8Array(msg.data);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        const base64 = 'data:image/png;base64,' + btoa(binary);
+        sendToApi(base64);
+      }
+
+      if (msg.type === 'done') {
+        setStatus('Done!', 'success');
+        setProcessing(false);
+      }
+
+      if (msg.type === 'error') {
+        setStatus(msg.message, 'error');
+        setProcessing(false);
+      }
+
+      if (msg.type === 'status') {
+        setStatus(msg.message);
+      }
+    };
+
+    // File upload handling
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+    function handleFile(file) {
+      if (!file || !file.type.startsWith('image/')) { setStatus('Not a valid image', 'error'); return; }
+      if (!getApiKey()) return;
+      setProcessing(true);
+      const reader = new FileReader();
+      reader.onload = () => sendToApi(reader.result);
+      reader.readAsDataURL(file);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "svg.new — Image to SVG",
+  "id": "000000000000000000",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "capabilities": [],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["https://svg.new"],
+    "reasoning": "Sends images to svg.new API for AI-powered vectorization"
+  }
+}
