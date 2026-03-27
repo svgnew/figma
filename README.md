@@ -2,6 +2,8 @@
 
 Convert raster images to clean SVG vectors directly in Figma using [svg.new](https://svg.new) — AI-powered vector tracing.
 
+![svg.new Figma Plugin](screenshot.png)
+
 ## Features
 
 - **Convert selected layers** — Select any image layer, click convert, get an editable SVG inserted next to it
