@@ -8,7 +8,7 @@
   "capabilities": [],
   "documentAccess": "dynamic-page",
   "networkAccess": {
-    "allowedDomains": ["https://svg.new", "https://*.svg.new"],
+    "allowedDomains": ["*"],
     "reasoning": "Sends images to svg.new API for AI-powered vectorization"
   }
 }
