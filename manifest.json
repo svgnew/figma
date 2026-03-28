@@ -1,6 +1,6 @@
 {
   "name": "svg.new — Image to SVG",
-  "id": "000000000000000000",
+  "id": "1619703187616562875",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
@@ -8,7 +8,7 @@
   "capabilities": [],
   "documentAccess": "dynamic-page",
   "networkAccess": {
-    "allowedDomains": ["*"],
+    "allowedDomains": ["https://svg.new"],
     "reasoning": "Sends images to svg.new API for AI-powered vectorization"
   }
 }
