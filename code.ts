@@ -25,7 +25,7 @@ figma.ui.onmessage = async (msg: { type: string; svg?: string; error?: string; k
     try {
       const imageBytes = await node.exportAsync({
         format: 'PNG',
-        constraint: { type: 'SCALE', value: 2 },
+        constraint: { type: 'SCALE', value: 1 },
       });
       figma.ui.postMessage({ type: 'image-data', data: Array.from(imageBytes) });
     } catch {

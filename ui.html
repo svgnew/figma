@@ -367,15 +367,52 @@
       }
     }
 
+    // Compress image to fit within Vercel's 4.5MB body limit (~3MB image after base64 overhead)
+    const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
+    const MAX_DIMENSION = 2048;
+
+    function compressImage(dataUrl) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+            const scale = MAX_DIMENSION / Math.max(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Try PNG first, fall back to JPEG if too large
+          let result = canvas.toDataURL('image/png');
+          if (result.length * 0.75 > MAX_IMAGE_BYTES) {
+            result = canvas.toDataURL('image/jpeg', 0.85);
+          }
+          if (result.length * 0.75 > MAX_IMAGE_BYTES) {
+            result = canvas.toDataURL('image/jpeg', 0.6);
+          }
+          resolve(result);
+        };
+        img.src = dataUrl;
+      });
+    }
+
     // Messages from sandbox
-    onmessage = (event) => {
+    onmessage = async (event) => {
       const msg = event.data.pluginMessage;
       if (!msg) return;
       if (msg.type === 'image-data') {
+        showProgress('Preparing image...', null);
         const bytes = new Uint8Array(msg.data);
         let bin = '';
         for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-        vectorize('data:image/png;base64,' + btoa(bin));
+        const raw = 'data:image/png;base64,' + btoa(bin);
+        const compressed = await compressImage(raw);
+        vectorize(compressed);
       }
       if (msg.type === 'done') { showSuccess('Vector inserted!'); setBusy(false); }
       if (msg.type === 'error') { showError(msg.message); setBusy(false); }
@@ -401,7 +438,10 @@
       $('status').className = 'status';
       showProgress('Reading file...', null);
       const r = new FileReader();
-      r.onload = () => vectorize(r.result);
+      r.onload = async () => {
+        const compressed = await compressImage(r.result);
+        vectorize(compressed);
+      };
       r.readAsDataURL(f);
     }
   </script>
