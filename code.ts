@@ -2,7 +2,16 @@
 
 figma.showUI(__html__, { width: 360, height: 480, themeColors: true });
 
-figma.ui.onmessage = async (msg: { type: string; svg?: string; error?: string }) => {
+figma.ui.onmessage = async (msg: { type: string; svg?: string; error?: string; key?: string }) => {
+  if (msg.type === 'get-key') {
+    const key = await figma.clientStorage.getAsync('svgnew_api_key');
+    if (key) figma.ui.postMessage({ type: 'stored-key', key });
+  }
+
+  if (msg.type === 'save-key' && msg.key !== undefined) {
+    await figma.clientStorage.setAsync('svgnew_api_key', msg.key);
+  }
+
   if (msg.type === 'vectorize-selection') {
     const selection = figma.currentPage.selection;
     if (selection.length === 0) {
@@ -19,7 +28,7 @@ figma.ui.onmessage = async (msg: { type: string; svg?: string; error?: string })
         constraint: { type: 'SCALE', value: 2 },
       });
       figma.ui.postMessage({ type: 'image-data', data: Array.from(imageBytes) });
-    } catch (e: any) {
+    } catch {
       figma.ui.postMessage({ type: 'error', message: 'Failed to export layer' });
     }
   }
@@ -37,7 +46,7 @@ figma.ui.onmessage = async (msg: { type: string; svg?: string; error?: string })
       figma.viewport.scrollAndZoomIntoView([svgNode]);
       figma.notify('SVG vector inserted!');
       figma.ui.postMessage({ type: 'done' });
-    } catch (e: any) {
+    } catch {
       figma.ui.postMessage({ type: 'error', message: 'Failed to insert SVG' });
     }
   }

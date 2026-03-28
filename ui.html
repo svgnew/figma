@@ -63,9 +63,9 @@
       font-size: 14px;
       font-weight: 650;
       cursor: pointer;
-      background: linear-gradient(135deg, var(--green) 0%, var(--brand) 100%);
+      background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
       color: #fff;
-      box-shadow: 0 2px 10px rgba(46,149,255,0.3);
+      box-shadow: 0 2px 10px rgba(99,102,241,0.35);
       transition: all 0.2s ease;
       display: flex;
       align-items: center;
@@ -75,15 +75,15 @@
       text-shadow: 0 1px 2px rgba(0,0,0,0.15);
     }
     .btn-convert:hover:not(:disabled) {
-      box-shadow: 0 4px 18px rgba(46,149,255,0.4);
+      box-shadow: 0 4px 18px rgba(99,102,241,0.45);
       transform: translateY(-1px);
     }
     .btn-convert:active:not(:disabled) {
       transform: translateY(0.5px);
-      box-shadow: 0 1px 4px rgba(46,149,255,0.25);
+      box-shadow: 0 1px 4px rgba(99,102,241,0.25);
     }
     .btn-convert:disabled {
-      background: linear-gradient(135deg, #a0c4e8 0%, #8fb5d9 100%);
+      background: linear-gradient(135deg, #93a3c8 0%, #a8a0d0 100%);
       box-shadow: none;
       cursor: not-allowed;
       text-shadow: none;
@@ -117,19 +117,26 @@
     .drop-hint { font-size: 11px; color: var(--fg2); margin-top: 2px; }
 
     /* Progress */
-    .progress { display: none; flex-direction: column; gap: 8px; }
+    .progress { display: none; flex-direction: column; gap: 6px; }
     .progress.visible { display: flex; }
-    .progress-track { width: 100%; height: 3px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+    .progress-track { width: 100%; height: 4px; background: var(--bg2); border-radius: 4px; overflow: hidden; }
     .progress-bar {
-      height: 100%; width: 30%;
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--green), var(--brand));
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    .progress-bar.indeterminate {
+      width: 30%;
       background: linear-gradient(90deg, var(--green), var(--brand), var(--green));
       background-size: 200% 100%;
-      border-radius: 3px;
       animation: shimmer 1.5s ease-in-out infinite, grow 2s ease-in-out infinite;
     }
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     @keyframes grow { 0%,100% { width: 25%; } 50% { width: 75%; } }
-    .progress-text { font-size: 11px; color: var(--fg2); font-weight: 500; text-align: center; }
+    .progress-info { display: flex; justify-content: space-between; align-items: center; }
+    .progress-text { font-size: 11px; color: var(--fg2); font-weight: 500; }
+    .progress-pct { font-size: 11px; color: var(--brand); font-weight: 600; font-variant-numeric: tabular-nums; }
 
     /* Status */
     .status {
@@ -161,6 +168,9 @@
       font-size: 12px; font-family: inherit; background: var(--bg2); color: var(--fg); outline: none;
     }
     .key-input:focus { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-glow); }
+    .key-status { font-size: 10px; margin-top: 4px; font-weight: 500; min-height: 14px; }
+    .key-status.saved { color: var(--success); }
+    .key-status.empty { color: var(--fg3); }
 
     /* Footer */
     .footer {
@@ -188,14 +198,17 @@
   <div class="content">
     <button class="btn-convert" id="btn" onclick="convert()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
       </svg>
       Vectorize Selected Layer
     </button>
 
     <div class="progress" id="progress">
-      <div class="progress-track"><div class="progress-bar"></div></div>
-      <div class="progress-text" id="progressText">Vectorizing...</div>
+      <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="progress-info">
+        <div class="progress-text" id="progressText">Vectorizing...</div>
+        <div class="progress-pct" id="progressPct"></div>
+      </div>
     </div>
 
     <div class="status" id="status">
@@ -228,6 +241,7 @@
       </div>
       <div class="settings-body" id="settingsBody">
         <input class="key-input" type="password" id="apiKey" placeholder="svk_..." autocomplete="off" />
+        <div class="key-status" id="keyStatus"></div>
       </div>
     </div>
   </div>
@@ -244,11 +258,24 @@
       $('chev').classList.toggle('open');
     }
 
-    // Key persistence
+    // Key persistence via Figma clientStorage (localStorage doesn't persist in plugins)
     const keyEl = $('apiKey');
-    const saved = localStorage.getItem('svgnew_key');
-    if (saved) keyEl.value = saved;
-    keyEl.addEventListener('input', () => localStorage.setItem('svgnew_key', keyEl.value));
+    const keyStatus = $('keyStatus');
+    let keySaveTimer = null;
+    parent.postMessage({ pluginMessage: { type: 'get-key' } }, '*');
+    keyEl.addEventListener('input', () => {
+      clearTimeout(keySaveTimer);
+      keySaveTimer = setTimeout(() => {
+        parent.postMessage({ pluginMessage: { type: 'save-key', key: keyEl.value } }, '*');
+        if (keyEl.value.trim()) {
+          keyStatus.textContent = '✓ Key saved';
+          keyStatus.className = 'key-status saved';
+        } else {
+          keyStatus.textContent = '';
+          keyStatus.className = 'key-status';
+        }
+      }, 300);
+    });
 
     function getKey() {
       const k = keyEl.value.trim();
@@ -262,12 +289,28 @@
     }
 
     // Status
-    function showProgress(msg) {
+    function showProgress(msg, percent) {
       $('progress').classList.add('visible');
       $('progressText').textContent = msg;
       $('status').className = 'status';
+      const bar = $('progressBar');
+      const pct = $('progressPct');
+      if (typeof percent === 'number') {
+        bar.classList.remove('indeterminate');
+        bar.style.width = percent + '%';
+        pct.textContent = percent + '%';
+      } else {
+        bar.classList.add('indeterminate');
+        bar.style.width = '';
+        pct.textContent = '';
+      }
     }
-    function hideProgress() { $('progress').classList.remove('visible'); }
+    function hideProgress() {
+      $('progress').classList.remove('visible');
+      $('progressBar').classList.remove('indeterminate');
+      $('progressBar').style.width = '0%';
+      $('progressPct').textContent = '';
+    }
 
     function showSuccess(msg) {
       hideProgress();
@@ -288,7 +331,7 @@
       b.disabled = on;
       b.innerHTML = on
         ? '<svg class="spinner" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" stroke-width="2.5"/><path d="M22 12a10 10 0 0 0-10-10" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>Vectorizing...'
-        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>Vectorize Selected Layer';
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Vectorize Selected Layer';
     }
 
     // Convert
@@ -297,27 +340,74 @@
       if (!getKey()) return;
       setBusy(true);
       $('status').className = 'status';
-      showProgress('Exporting layer...');
+      showProgress('Exporting layer...', null);
       parent.postMessage({ pluginMessage: { type: 'vectorize-selection' } }, '*');
     }
+
+    function formatStage(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
     async function vectorize(base64) {
       const key = getKey();
       if (!key) { setBusy(false); return; }
-      showProgress('Vectorizing with AI...');
+      showProgress('Connecting...', 0);
       try {
         const res = await fetch('https://svg.new/api/agent/vectorize', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + key,
+            Accept: 'text/event-stream',
+          },
           body: JSON.stringify({ image: base64 }),
         });
         if (!res.ok) {
           const e = await res.json().catch(() => ({}));
           throw new Error(e.error || 'Error ' + res.status);
         }
-        const data = await res.json();
-        showProgress('Inserting SVG...');
-        parent.postMessage({ pluginMessage: { type: 'insert-svg', svg: data.svg } }, '*');
+
+        const contentType = res.headers.get('content-type') || '';
+
+        if (contentType.includes('text/event-stream') && res.body) {
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let svg = null;
+
+          for (;;) {
+            const { done, value } = reader.read ? await reader.read() : { done: true, value: null };
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            let eventType = '';
+            for (const line of lines) {
+              if (line.startsWith('event: ')) {
+                eventType = line.slice(7).trim();
+              } else if (line.startsWith('data: ')) {
+                const data = JSON.parse(line.slice(6));
+                if (eventType === 'progress') {
+                  showProgress(formatStage(data.stage) + '...', data.percent);
+                } else if (eventType === 'result') {
+                  svg = data.svg;
+                } else if (eventType === 'error') {
+                  throw new Error(data.message || 'Vectorization failed');
+                }
+                eventType = '';
+              }
+            }
+          }
+
+          if (!svg) throw new Error('No result received');
+          showProgress('Inserting SVG...', 100);
+          parent.postMessage({ pluginMessage: { type: 'insert-svg', svg } }, '*');
+        } else {
+          // Fallback: regular JSON
+          showProgress('Vectorizing...', null);
+          const data = await res.json();
+          showProgress('Inserting SVG...', 100);
+          parent.postMessage({ pluginMessage: { type: 'insert-svg', svg: data.svg } }, '*');
+        }
       } catch (e) {
         showError(e.message);
         setBusy(false);
@@ -336,7 +426,12 @@
       }
       if (msg.type === 'done') { showSuccess('Vector inserted!'); setBusy(false); }
       if (msg.type === 'error') { showError(msg.message); setBusy(false); }
-      if (msg.type === 'status') showProgress(msg.message);
+      if (msg.type === 'status') showProgress(msg.message, null);
+      if (msg.type === 'stored-key' && msg.key) {
+        keyEl.value = msg.key;
+        keyStatus.textContent = '✓ Key saved';
+        keyStatus.className = 'key-status saved';
+      }
     };
 
     // File upload
@@ -351,7 +446,7 @@
       if (!getKey()) return;
       setBusy(true);
       $('status').className = 'status';
-      showProgress('Uploading...');
+      showProgress('Reading file...', null);
       const r = new FileReader();
       r.onload = () => vectorize(r.result);
       r.readAsDataURL(f);
