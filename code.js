@@ -34,8 +34,14 @@ figma.ui.onmessage = async (msg) => {
             const svgNode = figma.createNodeFromSvg(msg.svg);
             const selection = figma.currentPage.selection;
             if (selection.length > 0) {
-                svgNode.x = selection[0].x + selection[0].width + 50;
-                svgNode.y = selection[0].y;
+                const original = selection[0];
+                // Resize SVG to match original layer dimensions
+                const scaleX = original.width / svgNode.width;
+                const scaleY = original.height / svgNode.height;
+                svgNode.rescale(Math.min(scaleX, scaleY));
+                // Position next to original
+                svgNode.x = original.x + original.width + 50;
+                svgNode.y = original.y;
             }
             figma.currentPage.appendChild(svgNode);
             figma.currentPage.selection = [svgNode];
