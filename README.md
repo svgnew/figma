@@ -1,31 +1,35 @@
 # svg.new for Figma
 
-Convert raster images to clean SVG vectors directly in Figma using [svg.new](https://svg.new) — AI-powered vector tracing.
+Trace images and layers into SVG vectors in Figma with [svg.new](https://svg.new).
 
-![svg.new Figma Plugin](screenshot.png)
+![svg.new Figma plugin](listing/cover-1920x1080.png)
 
 ## Features
 
-- **Convert selected layers** — Select any image layer, click convert, get an editable SVG inserted next to it
-- **Upload images** — Drag and drop or browse for images to vectorize
-- **Full-color tracing** — AI preserves all colors, not just black and white
-- **Editable vectors** — Results are native Figma vector paths you can edit
+- **Vectorize the selection.** Select one or more layers, up to 10 at a time, and click Vectorize. Each SVG is added next to its source layer, at the same size.
+- **Upload images.** Drop a PNG, JPG or WebP file on the panel, or click to choose one. The SVG is added in the middle of the view.
+- **Full color.** Colors are traced, not only black and white.
+- **Editable vectors.** Results are Figma vector layers you can edit like any other.
+
+It works on every Figma plan, including Starter.
 
 ## Setup
 
-1. Install the plugin from Figma Community
-2. Get an API key at [svg.new/account](https://svg.new/account)
-3. Enter your key in the plugin panel
+1. Install the plugin from the Figma Community.
+2. Get an API key at [svg.new/account](https://svg.new/account). A free account traces 3 images a day.
+3. Paste the key into the plugin panel. It is saved on this computer with Figma's client storage.
 
-## How it works
+Each traced layer or image uses 1 svg.new credit.
 
-1. Select an image layer in your Figma file (or upload one)
-2. Run the plugin and click "Convert Selected Layer"
-3. The image is sent to svg.new's AI vectorization engine
-4. The resulting SVG is inserted as editable vector paths next to the original
+## Build
+
+```sh
+npm install
+npm run build   # compiles code.ts to code.js
+```
 
 ## Links
 
-- [svg.new](https://svg.new) — Web app
-- [Pricing](https://svg.new/pricing) — Plans and API credits
-- [API Docs](https://svg.new/developers) — REST API documentation
+- [svg.new](https://svg.new): web app
+- [Pricing](https://svg.new/pricing): plans and API credits
+- [API docs](https://svg.new/developers): REST API reference

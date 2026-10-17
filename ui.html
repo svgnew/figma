@@ -28,7 +28,7 @@
 
     /* Header */
     .header {
-      background: #f5f5f5;
+      background: var(--bg2);
       padding: 16px 20px;
       display: flex;
       flex-direction: column;
@@ -168,6 +168,13 @@
       border-top: 1px solid var(--border);
     }
     .footer a { color: var(--brand); text-decoration: none; font-weight: 600; }
+    .footer p + p { margin-top: 2px; }
+
+    .hint { font-size: 11px; color: var(--fg2); text-align: center; margin-top: -8px; }
+    .credits { font-size: 11px; color: var(--fg2); text-align: center; display: none; }
+    .credits.visible { display: block; }
+    .status-link { color: inherit; font-weight: 600; text-decoration: underline; margin-left: 4px; display: none; }
+    .status-link.visible { display: inline; }
 
     .spinner { width: 16px; height: 16px; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -187,29 +194,27 @@
         <linearGradient id="pl3" x1="266" y1="144" x2="169" y2="365" gradientUnits="userSpaceOnUse"><stop stop-color="#00FFBF"/><stop offset="1" stop-color="#2E95FF"/></linearGradient>
       </defs>
     </svg>
-    <p class="header-sub">Image to SVG vectorizer</p>
+    <p class="header-sub">Image to SVG</p>
   </div>
 
+
   <div class="content">
-    <button class="btn-convert" id="btn" onclick="convert()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-      </svg>
-      Vectorize Selected Layer
-    </button>
+    <button class="btn-convert" id="btn" disabled></button>
+    <div class="hint" id="hint"></div>
 
     <div class="progress" id="progress">
       <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
       <div class="progress-info">
-        <div class="progress-text" id="progressText">Vectorizing...</div>
+        <div class="progress-text" id="progressText"></div>
         <div class="progress-pct" id="progressPct"></div>
       </div>
     </div>
 
     <div class="status" id="status">
       <span id="statusIcon"></span>
-      <span id="statusText"></span>
+      <span><span id="statusText"></span><a class="status-link" id="statusLink" href="#"></a></span>
     </div>
+    <div class="credits" id="credits"></div>
 
     <div class="divider">
       <div class="divider-line"></div>
@@ -217,87 +222,145 @@
       <div class="divider-line"></div>
     </div>
 
-    <div class="drop-zone" id="drop" onclick="document.getElementById('file').click()">
+    <div class="drop-zone" id="drop" role="button" tabindex="0" aria-label="Upload an image to trace">
       <div class="drop-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
       </div>
       <div class="drop-label">Drop an image here</div>
-      <div class="drop-hint">PNG, JPG, or WebP</div>
+      <div class="drop-hint">PNG, JPG or WebP</div>
     </div>
     <input type="file" id="file" accept="image/png,image/jpeg,image/webp" style="display:none" />
 
     <div class="settings">
-      <div class="settings-toggle" onclick="toggleSettings()">
+      <div class="settings-toggle" id="settingsToggle" role="button" tabindex="0" aria-controls="settingsBody">
         <svg class="gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span class="settings-label">API Key</span>
+        <span class="settings-label">svg.new API key</span>
         <svg class="chevron" id="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="settings-body" id="settingsBody">
-        <input class="key-input" type="password" id="apiKey" placeholder="svk_..." autocomplete="off" />
+        <input class="key-input" type="password" id="apiKey" placeholder="svk_..." autocomplete="off" aria-label="svg.new API key" />
         <div class="key-status" id="keyStatus"></div>
       </div>
     </div>
   </div>
 
-  <div class="footer">Get your key at <a href="https://svg.new/account" target="_blank">svg.new/account</a></div>
+  <div class="footer">
+    <p>A free svg.new account traces 3 images a day.</p>
+    <p><a href="#" id="getKey">Get an API key at svg.new</a></p>
+  </div>
 
   <script>
-    let busy = false;
-    const $ = id => document.getElementById(id);
+    const API = 'https://svg.new/api/agent';
+    const ACCOUNT_URL = 'https://svg.new/account';
+    const PLANS_URL = 'https://svg.new/pricing';
 
-    // Settings
-    function toggleSettings() {
-      $('settingsBody').classList.toggle('open');
-      $('chev').classList.toggle('open');
+    const $ = (id) => document.getElementById(id);
+    const post = (msg) => parent.postMessage({ pluginMessage: msg }, '*');
+
+    let busy = false;
+    let selectionCount = 0;
+    let maxLayers = 10;
+
+    // ---- Replies from the plugin sandbox ----
+    const waiters = [];
+    function request(msg, replyTypes) {
+      return new Promise((resolve) => {
+        waiters.push({ types: replyTypes, id: msg.id === undefined ? null : msg.id, resolve });
+        post(msg);
+      });
     }
 
-    // Key persistence via Figma clientStorage (localStorage doesn't persist in plugins)
+    onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+      const i = waiters.findIndex((w) => w.types.includes(msg.type) && w.id === (msg.id === undefined ? null : msg.id));
+      if (i >= 0) {
+        const [w] = waiters.splice(i, 1);
+        w.resolve(msg);
+        return;
+      }
+      switch (msg.type) {
+        case 'selection':
+          selectionCount = msg.count;
+          maxLayers = msg.max;
+          updateButton();
+          break;
+        case 'stored-key':
+          keyEl.value = msg.key;
+          keyStatus.textContent = 'Key saved on this computer';
+          keyStatus.className = 'key-status saved';
+          setSettingsOpen(false);
+          break;
+        case 'queue':
+          runQueue(msg.nodes);
+          break;
+        case 'error':
+          showError(msg.message);
+          setBusy(false);
+          break;
+      }
+    };
+
+    // ---- Links (opened in the browser by the sandbox) ----
+    function openUrl(url) { post({ type: 'open-url', url }); }
+    $('getKey').addEventListener('click', (e) => { e.preventDefault(); openUrl(ACCOUNT_URL); });
+    $('statusLink').addEventListener('click', (e) => { e.preventDefault(); openUrl($('statusLink').dataset.url); });
+
+    // ---- API key, kept with figma.clientStorage on this computer ----
     const keyEl = $('apiKey');
     const keyStatus = $('keyStatus');
     let keySaveTimer = null;
-    parent.postMessage({ pluginMessage: { type: 'get-key' } }, '*');
+
+    function setSettingsOpen(open) {
+      $('settingsBody').classList.toggle('open', open);
+      $('chev').classList.toggle('open', open);
+      $('settingsToggle').setAttribute('aria-expanded', String(open));
+    }
+    function toggleSettings() { setSettingsOpen(!$('settingsBody').classList.contains('open')); }
+    $('settingsToggle').addEventListener('click', toggleSettings);
+    $('settingsToggle').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSettings(); }
+    });
+
     keyEl.addEventListener('input', () => {
       clearTimeout(keySaveTimer);
       keySaveTimer = setTimeout(() => {
-        parent.postMessage({ pluginMessage: { type: 'save-key', key: keyEl.value } }, '*');
-        if (keyEl.value.trim()) {
-          keyStatus.textContent = '✓ Key saved';
-          keyStatus.className = 'key-status saved';
-        } else {
-          keyStatus.textContent = '';
-          keyStatus.className = 'key-status';
-        }
+        post({ type: 'save-key', key: keyEl.value.trim() });
+        keyStatus.textContent = keyEl.value.trim() ? 'Key saved on this computer' : '';
+        keyStatus.className = keyEl.value.trim() ? 'key-status saved' : 'key-status';
       }, 300);
     });
 
     function getKey() {
       const k = keyEl.value.trim();
       if (!k) {
-        if (!$('settingsBody').classList.contains('open')) toggleSettings();
-        showError('Enter your API key');
+        setSettingsOpen(true);
+        showError('Add your svg.new API key first.', { text: 'Get a key', url: ACCOUNT_URL });
         keyEl.focus();
         return null;
       }
       return k;
     }
 
-    // Status
+    // ---- Status ----
+    const ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+    const ICON_ERR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+
     function showProgress(msg, percent) {
       $('progress').classList.add('visible');
       $('progressText').textContent = msg;
       $('status').className = 'status';
       const bar = $('progressBar');
-      const pct = $('progressPct');
       if (typeof percent === 'number') {
         bar.classList.remove('indeterminate');
         bar.style.width = percent + '%';
-        pct.textContent = percent + '%';
+        $('progressPct').textContent = percent + '%';
       } else {
         bar.classList.add('indeterminate');
         bar.style.width = '';
-        pct.textContent = '';
+        $('progressPct').textContent = '';
       }
     }
     function hideProgress() {
@@ -306,73 +369,123 @@
       $('progressBar').style.width = '0%';
       $('progressPct').textContent = '';
     }
-
-    function showSuccess(msg) {
+    function showStatus(kind, msg, link) {
       hideProgress();
-      $('status').className = 'status visible success';
-      $('statusIcon').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+      $('status').className = 'status visible ' + kind;
+      $('statusIcon').innerHTML = kind === 'success' ? ICON_OK : ICON_ERR;
       $('statusText').textContent = msg;
+      const a = $('statusLink');
+      if (link) {
+        a.textContent = link.text;
+        a.dataset.url = link.url;
+        a.className = 'status-link visible';
+      } else {
+        a.textContent = '';
+        a.className = 'status-link';
+      }
     }
-    function showError(msg) {
-      hideProgress();
-      $('status').className = 'status visible error';
-      $('statusIcon').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-      $('statusText').textContent = msg;
+    const showSuccess = (msg, link) => showStatus('success', msg, link);
+    const showError = (msg, link) => showStatus('error', msg, link);
+
+    function showCredits(remaining) {
+      const el = $('credits');
+      if (typeof remaining !== 'number') { el.className = 'credits'; return; }
+      el.textContent = remaining === 1 ? '1 svg.new credit left' : remaining + ' svg.new credits left';
+      el.className = 'credits visible';
+    }
+
+    // ---- Button ----
+    const BOLT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>';
+    const SPIN = '<svg class="spinner" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" stroke-width="2.5"/><path d="M22 12a10 10 0 0 0-10-10" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>';
+
+    function updateButton() {
+      const b = $('btn');
+      const hint = $('hint');
+      if (busy) {
+        b.disabled = true;
+        b.innerHTML = SPIN + 'Tracing...';
+        return;
+      }
+      const tooMany = selectionCount > maxLayers;
+      b.disabled = selectionCount === 0 || tooMany;
+      b.innerHTML = BOLT + (selectionCount > 1 && !tooMany ? 'Vectorize ' + selectionCount + ' layers' : 'Vectorize selection');
+      hint.textContent = selectionCount === 0
+        ? 'Select one or more layers to trace, up to ' + maxLayers + ' at a time.'
+        : tooMany
+          ? 'Select up to ' + maxLayers + ' layers at a time.'
+          : 'Each layer uses 1 svg.new credit.';
     }
 
     function setBusy(on) {
       busy = on;
-      const b = $('btn');
-      b.disabled = on;
-      b.innerHTML = on
-        ? '<svg class="spinner" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" stroke-width="2.5"/><path d="M22 12a10 10 0 0 0-10-10" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>Vectorizing...'
-        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Vectorize Selected Layer';
+      updateButton();
     }
 
-    // Convert
-    function convert() {
-      if (busy) return;
-      if (!getKey()) return;
-      setBusy(true);
-      $('status').className = 'status';
-      showProgress('Exporting layer...', null);
-      parent.postMessage({ pluginMessage: { type: 'vectorize-selection' } }, '*');
-    }
-
-    function formatStage(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-
-    async function vectorize(base64) {
-      const key = getKey();
-      if (!key) { setBusy(false); return; }
-      showProgress('Vectorizing with AI...', null);
-      try {
-        const res = await fetch('https://svg.new/api/agent/vectorize', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer ' + key,
-          },
-          body: JSON.stringify({ image: base64 }),
-        });
-        if (!res.ok) {
-          const e = await res.json().catch(() => ({}));
-          throw new Error(e.error || 'Error ' + res.status);
-        }
-        const data = await res.json();
-        showProgress('Inserting SVG...', 100);
-        parent.postMessage({ pluginMessage: { type: 'insert-svg', svg: data.svg } }, '*');
-      } catch (e) {
-        showError(e.message);
-        setBusy(false);
+    // ---- svg.new API ----
+    class UserError extends Error {
+      constructor(message, opts = {}) {
+        super(message);
+        this.stopRun = !!opts.stopRun; // account-wide problems end a batch early
+        this.link = opts.link || null;
       }
     }
 
-    // Compress image to fit within Vercel's 4.5MB body limit (~3MB image after base64 overhead)
+    function apiError(status, message) {
+      if (status === 401) {
+        return new UserError("That API key doesn't work. Check it on your svg.new account page.", { stopRun: true, link: { text: 'Open account', url: ACCOUNT_URL } });
+      }
+      if (status === 402 || status === 403) {
+        return new UserError(message || 'Your svg.new account has no credits left.', { stopRun: true, link: { text: 'See plans', url: PLANS_URL } });
+      }
+      if (status === 413) return new UserError('This image is too large. Try a smaller layer.');
+      if (status === 429) return new UserError('That was a lot of images in one minute. Wait a minute, then try again.', { stopRun: true });
+      if (status === 504) return new UserError('This image took too long to trace. Try a smaller or simpler image.');
+      return new UserError("svg.new couldn't trace this image. Try again in a moment.");
+    }
+
+    async function vectorizeImage(dataUrl, key) {
+      if (!navigator.onLine) throw new UserError("You're offline. Connect to the internet and try again.", { stopRun: true });
+      let res;
+      try {
+        res = await fetch(API + '/vectorize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+          body: JSON.stringify({ image: dataUrl }),
+        });
+      } catch {
+        throw new UserError("Couldn't reach svg.new. Check your connection and try again.", { stopRun: true });
+      }
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data) throw apiError(res.status, data && data.error);
+
+      // Large results come back as a one-hour download link instead of inline text.
+      let svg = data.svg;
+      if (!svg && data.svg_url) {
+        try {
+          const r = await fetch(data.svg_url);
+          if (r.ok) svg = await r.text();
+        } catch { /* reported below */ }
+      }
+      if (!svg) throw new UserError("svg.new couldn't trace this image. Try again in a moment.");
+      return { svg, credits: data.metadata ? data.metadata.credits_remaining : undefined };
+    }
+
+    // ---- Images ----
+    // Keep uploads under the API's 4.5 MB request limit (about 3 MB of image after base64).
     const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
     const MAX_DIMENSION = 2048;
 
+    function bytesToDataUrl(bytes) {
+      let bin = '';
+      const CHUNK = 0x8000;
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+      }
+      return 'data:image/png;base64,' + btoa(bin);
+    }
+
     function compressImage(dataUrl) {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
           let { width, height } = img;
@@ -384,66 +497,129 @@
           const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Try PNG first, fall back to JPEG if too large
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
           let result = canvas.toDataURL('image/png');
-          if (result.length * 0.75 > MAX_IMAGE_BYTES) {
-            result = canvas.toDataURL('image/jpeg', 0.85);
-          }
-          if (result.length * 0.75 > MAX_IMAGE_BYTES) {
-            result = canvas.toDataURL('image/jpeg', 0.6);
-          }
+          if (result.length * 0.75 > MAX_IMAGE_BYTES) result = canvas.toDataURL('image/jpeg', 0.85);
+          if (result.length * 0.75 > MAX_IMAGE_BYTES) result = canvas.toDataURL('image/jpeg', 0.6);
           resolve(result);
         };
+        img.onerror = () => reject(new UserError("This file couldn't be read as an image."));
         img.src = dataUrl;
       });
     }
 
-    // Messages from sandbox
-    onmessage = async (event) => {
-      const msg = event.data.pluginMessage;
-      if (!msg) return;
-      if (msg.type === 'image-data') {
-        showProgress('Preparing image...', null);
-        const bytes = new Uint8Array(msg.data);
-        let bin = '';
-        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-        const raw = 'data:image/png;base64,' + btoa(bin);
-        const compressed = await compressImage(raw);
-        vectorize(compressed);
-      }
-      if (msg.type === 'done') { showSuccess('Vector inserted!'); setBusy(false); }
-      if (msg.type === 'error') { showError(msg.message); setBusy(false); }
-      if (msg.type === 'status') showProgress(msg.message, null);
-      if (msg.type === 'stored-key' && msg.key) {
-        keyEl.value = msg.key;
-        keyStatus.textContent = '✓ Key saved';
-        keyStatus.className = 'key-status saved';
-      }
-    };
-
-    // File upload
-    const drop = $('drop');
-    drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
-    drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
-    drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
-    $('file').addEventListener('change', e => handleFile(e.target.files[0]));
-
-    function handleFile(f) {
-      if (!f || !f.type.startsWith('image/')) { showError('Not a valid image'); return; }
+    // ---- Vectorize the selection, one layer at a time ----
+    function convert() {
+      if (busy) return;
       if (!getKey()) return;
       setBusy(true);
       $('status').className = 'status';
-      showProgress('Reading file...', null);
-      const r = new FileReader();
-      r.onload = async () => {
-        const compressed = await compressImage(r.result);
-        vectorize(compressed);
-      };
-      r.readAsDataURL(f);
+      showProgress('Getting the selection...', null);
+      post({ type: 'start' });
     }
+    $('btn').addEventListener('click', convert);
+
+    async function runQueue(nodes) {
+      const key = getKey();
+      if (!key) { setBusy(false); return; }
+      const total = nodes.length;
+      let added = 0;
+      let lastError = null;
+      let stopError = null;
+      let credits;
+
+      for (let i = 0; i < total; i++) {
+        const node = nodes[i];
+        const prefix = total > 1 ? 'Layer ' + (i + 1) + ' of ' + total + ': ' : '';
+        const pct = (step) => Math.round(((i + step) / total) * 100);
+        try {
+          showProgress(prefix + 'exporting', total > 1 ? pct(0) : null);
+          const exported = await request({ type: 'export', id: node.id }, ['exported', 'export-failed']);
+          if (exported.type === 'export-failed') throw new UserError(exported.message);
+
+          showProgress(prefix + 'tracing', total > 1 ? pct(0.2) : null);
+          const image = await compressImage(bytesToDataUrl(exported.data));
+          const result = await vectorizeImage(image, key);
+          if (typeof result.credits === 'number') credits = result.credits;
+
+          showProgress(prefix + 'adding to the file', total > 1 ? pct(0.9) : null);
+          const done = await request({ type: 'insert', id: node.id, svg: result.svg }, ['inserted', 'insert-failed']);
+          if (done.type === 'insert-failed') throw new UserError(done.message);
+          added++;
+        } catch (e) {
+          const err = e instanceof UserError ? e : new UserError("svg.new couldn't trace this image. Try again in a moment.");
+          lastError = err;
+          if (err.stopRun) { stopError = err; break; }
+        }
+      }
+
+      post({ type: 'finish' });
+      // After a credit or key error the last balance seen is out of date, so it isn't shown.
+      showCredits(stopError ? undefined : credits);
+      setBusy(false);
+
+      const layers = (n) => (n === 1 ? '1 vector layer' : n + ' vector layers');
+      if (stopError) {
+        showError(stopError.message + (added ? ' Added ' + layers(added) + ' before stopping.' : ''), stopError.link);
+      } else if (added === 0) {
+        showError(lastError ? lastError.message : 'No layers could be traced.', lastError && lastError.link);
+      } else if (added < total) {
+        showSuccess('Added ' + added + ' of ' + total + ' layers. ' + (total - added) + " couldn't be traced: " + lastError.message);
+      } else {
+        showSuccess('Added ' + layers(added) + '.');
+      }
+    }
+
+    // ---- Upload a file ----
+    const drop = $('drop');
+    drop.addEventListener('click', () => $('file').click());
+    drop.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('file').click(); }
+    });
+    drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('dragover'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+    drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+    $('file').addEventListener('change', (e) => { handleFile(e.target.files[0]); e.target.value = ''; });
+
+    function readFile(f) {
+      return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = () => reject(new UserError("This file couldn't be read."));
+        r.readAsDataURL(f);
+      });
+    }
+
+    async function handleFile(f) {
+      if (busy) return;
+      if (!f || !/^image\/(png|jpeg|webp)$/.test(f.type)) { showError('Choose a PNG, JPG or WebP image.'); return; }
+      const key = getKey();
+      if (!key) return;
+      setBusy(true);
+      $('status').className = 'status';
+      try {
+        showProgress('Reading the file', null);
+        const image = await compressImage(await readFile(f));
+        showProgress('Tracing', null);
+        const result = await vectorizeImage(image, key);
+        showProgress('Adding to the file', null);
+        const done = await request({ type: 'insert', id: null, svg: result.svg }, ['inserted', 'insert-failed']);
+        if (done.type === 'insert-failed') throw new UserError(done.message);
+        post({ type: 'finish' });
+        showCredits(result.credits);
+        showSuccess('Added 1 vector layer.');
+      } catch (e) {
+        const err = e instanceof UserError ? e : new UserError("svg.new couldn't trace this image. Try again in a moment.");
+        showError(err.message, err.link);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    // ---- Start ----
+    updateButton();
+    setSettingsOpen(true);
+    post({ type: 'get-key' });
   </script>
 </body>
 </html>
