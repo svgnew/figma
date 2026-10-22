@@ -16,7 +16,7 @@ It works on every Figma plan, including Starter.
 ## Setup
 
 1. Install the plugin from the Figma Community.
-2. Get an API key at [svg.new/account](https://svg.new/account). A free account traces 3 images a day.
+2. Get an API key at [svg.new/account](https://svg.new/account). A free account traces 1 image a day.
 3. Paste the key into the plugin panel. It is saved on this computer with Figma's client storage.
 
 Each traced layer or image uses 1 svg.new credit.
